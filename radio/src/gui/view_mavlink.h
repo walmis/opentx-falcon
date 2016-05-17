@@ -54,27 +54,31 @@ void menuTelemetryMavlink(uint8_t event);
 void displayScreenIndex(uint8_t index, uint8_t count, uint8_t attr);
 void lcd_outdezFloat(uint8_t x, uint8_t y, float val, uint8_t precis, uint8_t mode = 0);
 void mav_title(const pm_char * s, uint8_t index);
-void menuTelemetryMavlinkInfos(void);
-void menuTelemetryMavlinkFlightMode(void);
-void menuTelemetryMavlinkBattery(void);
-void menuTelemetryMavlinkNavigation(void);
-void menuTelemetryMavlinkGPS(void);
+void menuTelemetryMavlinkInfos();
+void menuTelemetryMavlinkFlightMode();
+void menuTelemetryMavlinkBattery();
+void menuTelemetryMavlinkNavigation();
+void menuTelemetryMavlinkGPS();
+void menuTelemetryMavlinkInfos();
+void menuTelemetryMavlinkRadio();
 #ifdef DUMP_RX_TX
 void lcd_outhex2(uint8_t x, uint8_t y, uint8_t val);
 void menuTelemetryMavlinkDump(uint8_t event);
 #endif
 void menuTelemetryMavlinkSetup(uint8_t event);
+void showStatusMessage(uint8_t event);
 
 /*!	\brief Mavlink menu enumerator
  *	\details Used to create a readable case statement for the
  *	\link menuTelemetryMavlink menuTelemetryMavlink \endlink funtion.
  */
 enum mavlink_menu_ {
-	MENU_INFO = 0, //
-	MENU_MODE,
+	MENU_MODE = 0,
 	MENU_BATT,
 	MENU_NAV,
-	MENU_GPS, //
+	MENU_GPS,
+	MENU_RADIO,//
+	MENU_INFO,
 #ifdef DUMP_RX_TX
 	MENU_DUMP_RX, //
 	MENU_DUMP_DIAG, //
@@ -89,8 +93,11 @@ const MenuFuncP_PROGMEM menuTabMav[] PROGMEM = {
 
 //! \brief Mavlink setup menu configuration items list.
 enum menuMavlinkSetupItems {
-	ITEM_MAVLINK_RC_RSSI_SCALE,
-	ITEM_MAVLINK_PC_RSSI_EN,
+	ITEM_MAVLINK_RADIO_FREQUENCY,
+	ITEM_MAVLINK_RADIO_FREQHOPS,
+	ITEM_MAVLINK_RADIO_CFG,
+	ITEM_MAVLINK_RADIO_TXINTERVAL,
+	ITEM_MAVLINK_RADIO_TXPOWER,
 	ITEM_MAVLINK_MAX
 };
 

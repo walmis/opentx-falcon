@@ -44,7 +44,7 @@
 
 #include "GCS_MAVLink/include_v1.0/mavlink_types.h"
 #include "opentx.h"
-//#include "include/mavlink_helpers.h"
+#include "radio_cfg_packets.hpp"
 
 extern mavlink_system_t mavlink_system;
 
@@ -54,13 +54,27 @@ extern void SERIAL_send_uart_bytes(const uint8_t * buf, uint16_t len);
 
 # define MAV_SYSTEM_ID	1
 //mavlink_system.type = 2; //MAV_QUADROTOR;
+static inline uint8_t mavlink_msg_crc(uint8_t msg);
 
+#define LEN_STATUSTEXT 28
 
-#define MAVLINK_START_UART_SEND(chan,len) SERIAL_start_uart_send()
-#define MAVLINK_END_UART_SEND(chan,len) SERIAL_end_uart_send()
+extern uint16_t mav_heartbeat;
+
+extern char mav_statustext[LEN_STATUSTEXT];
+extern uint8_t msg_severity;
+extern uint16_t msg_timestamp;
+
+#define MAVLINK_MESSAGE_CRC(msgid) mavlink_msg_crc(msgid)
+
+//#define MAVLINK_START_UART_SEND(chan,len) SERIAL_start_uart_send()
+//#define MAVLINK_END_UART_SEND(chan,len) SERIAL_end_uart_send()
 #define MAVLINK_SEND_UART_BYTES(chan,buf,len) SERIAL_send_uart_bytes(buf,len)
-
 #include "../GCS_MAVLink/include_v1.0/ardupilotmega/mavlink.h"
+
+uint8_t mavlink_msg_crc(uint8_t msg) {
+	static const PROGMEM uint8_t mavlink_message_crcs[256] = MAVLINK_MESSAGE_CRCS;
+	return pgm_read_byte(mavlink_message_crcs+msg);
+}
 
 //#define MAVLINK_PARAMS
 //#define DUMP_RX_TX
@@ -68,24 +82,35 @@ extern void SERIAL_send_uart_bytes(const uint8_t * buf, uint16_t len);
 #define ERROR_NUM_MODES 99
 #define ERROR_MAV_ACTION_NB 99
 
+enum gcs_severity {
+    SEVERITY_LOW=1,
+    SEVERITY_MEDIUM,
+    SEVERITY_HIGH,
+    SEVERITY_CRITICAL,
+    SEVERITY_USER_RESPONSE
+};
 
 // Auto Pilot modes
 // ----------------
-#define AC_STABILIZE 0		// hold level position
-#define AC_ACRO 1			// rate control
-#define AC_ALT_HOLD 2		// AUTO control
-#define AC_AUTO 3			// AUTO control
-#define AC_GUIDED 4			// AUTO control
-#define AC_LOITER 5			// Hold a single location
-#define AC_RTL 6			// AUTO control
-#define AC_CIRCLE 7			// AUTO control
-#define AC_POSITION 8		// AUTO control
-#define AC_LAND 9			// AUTO control
-#define AC_OF_LOITER 10		// Hold a single location using optical flow
-							// sensor
-#define AC_TOY_A 11			// THOR Enum for Toy mode
-#define AC_TOY_M 12			// THOR Enum for Toy mode
-#define AC_NUM_MODES 13
+
+#define AC_STABILIZE =     0,  // manual airframe angle with manual throttle
+#define AC_ACRO =          1,  // manual body-frame angular rate with manual throttle
+#define AC_ALT_HOLD =      2,  // manual airframe angle with automatic throttle
+#define AC_AUTO =          3,  // fully automatic waypoint control using mission commands
+#define AC_GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+#define AC_LOITER =        5,  // automatic horizontal acceleration with automatic throttle
+#define AC_RTL =           6,  // automatic return to launching point
+#define AC_CIRCLE =        7,  // automatic circular flight with automatic throttle
+#define AC_LAND =          9,  // automatic landing with horizontal position control
+#define AC_OF_LOITER =    10,  // deprecated
+#define AC_DRIFT =        11,  // semi-automous position, yaw and throttle control
+#define AC_SPORT =        13,  // manual earth-frame angular rate control with manual throttle
+#define AC_FLIP =         14,  // automatically flip the vehicle on the roll axis
+#define AC_AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
+#define AC_POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
+#define AC_BRAKE =        17   // full-brake using inertial/GPS system, no pilot input
+#define AC_NUM_MODES 18
+
 
 // Mavlink airframe types
 #define MAVLINK_ARDUCOPTER 0
@@ -159,8 +184,8 @@ typedef struct MavlinkParam_ {
 typedef struct Location_ {
 	float lat; ///< Latitude in degrees
 	float lon; ///< Longitude in degrees
-	float gps_alt; ///< Altitude in meters
-	float rel_alt;
+	int16_t gps_alt; ///alt in m*10
+	int16_t rel_alt; //alt in m*10
 } Location_t;
 
 typedef struct Telemetry_Data_ {
@@ -177,34 +202,57 @@ typedef struct Telemetry_Data_ {
 	uint8_t mav_compid;
 	uint8_t mode;
 	uint32_t custom_mode;
-	bool 	active;
+
+	bool 	armed : 1;
+	bool    link_lost: 1; //used by mavlink view for beeping when telem is lost
+	bool    vbat_low : 1;
+
 	uint8_t nav_mode;
-	uint8_t rcv_control_mode; ///< System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
+	//uint8_t rcv_control_mode; ///< System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
 	uint16_t load; ///< Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
-	uint8_t vbat; ///< Battery voltage, in millivolts (1 = 1 millivolt)
-	uint8_t ibat; ///< Battery voltage, in millivolts (1 = 1 millivolt)
+	uint16_t vbat; ///< Battery voltage, in millivolts (1 = 1 millivolt)
+	uint16_t ibat; ///< Battery voltage, in millivolts (1 = 1 millivolt)
+	uint16_t pwrbat;
 	uint8_t rem_bat; ///< Battery voltage, in millivolts (1 = 1 millivolt)
-	bool vbat_low;
-	
-	uint8_t rc_rssi;
-	uint8_t pc_rssi;
-	
-	uint8_t debug;
+
+
 
 	// MSG ACTION / ACK
-	uint8_t req_mode;
-	int8_t ack_result;
+	//uint8_t req_mode;
+	//int8_t ack_result;
 
 	// GPS
 	uint8_t fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
 	uint8_t satellites_visible; ///< Number of satellites visible
+	uint8_t hdop;
+
+	uint8_t throttle; //throttle in percent
+
 	Location_t loc_current;
-	float eph;
-	uint16_t course;
-	float v; // Ground speed
+
+	int16_t v; // Ground speed in m/s*100
+
 	// Navigation
-	uint16_t heading;
-	uint16_t bearing;
+	uint16_t heading; //heading in deg
+	uint16_t bearing; //bearing in deg
+	uint16_t course;  //course in deg
+
+	uint16_t wp_dist;
+
+	uint16_t cells_v[4]; //cells voltage in v*100
+	uint16_t current_consumed; //current consumed in mah
+
+	struct {
+		 int16_t xacc; ///< X acceleration (raw)
+		 int16_t yacc; ///< Y acceleration (raw)
+		 int16_t zacc; ///< Z acceleration (raw)
+		 int16_t xgyro; ///< Angular speed around X axis (raw)
+		 int16_t ygyro; ///< Angular speed around Y axis (raw)
+		 int16_t zgyro; ///< Angular speed around Z axis (raw)
+		 int16_t xmag; ///< X Magnetic field (raw)
+		 int16_t ymag; ///< Y Magnetic field (raw)
+		 int16_t zmag; ///< Z Magnetic field (raw)
+	} imu;
 
 #ifdef MAVLINK_PARAMS
 	// Params
@@ -212,6 +260,9 @@ typedef struct Telemetry_Data_ {
 #endif
 
 } Telemetry_Data_t;
+
+extern RadioConfiguration radioCfg;
+extern RadioStatus radioStatus;
 
 // Telemetry data hold
 extern Telemetry_Data_t telemetry_data;

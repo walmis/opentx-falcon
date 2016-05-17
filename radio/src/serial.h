@@ -17,6 +17,8 @@
 #ifndef _SERIAL_H_
 #define _SERIAL_H_
 
+#include "io_buffer.hpp"
+
 typedef enum serial_tx_state_ {
 	TX_STATE_EMPTY = 0, //
 	TX_STATE_READY, //
@@ -49,9 +51,7 @@ extern uint8_t * ptrTxISR;
 //#endif
 
 void SERIAL_Init(void);
-//void SERIAL_transmitBuffer(uint8_t len);
-extern void SERIAL_start_uart_send();
-extern void SERIAL_end_uart_send();
+
 extern void SERIAL_send_uart_bytes(uint8_t * buf, uint16_t len);
 
 void SERIAL_startTX(void);

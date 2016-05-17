@@ -23,10 +23,10 @@
 DATA_DIR = /tmp
 
 # Backup the old flash (YES, NO)
-BACKUP_FLASH = YES
+BACKUP_FLASH = NO
 
 # Backup the old EEPROM (YES, NO)
-BACKUP_EEPROM = YES
+BACKUP_EEPROM = NO
 
 # Restore EEPROM to 9x (YES, NO) (will set BACKUP_EEPROM to YES).
 RESTORE_EEPROM = NO
@@ -35,14 +35,14 @@ RESTORE_EEPROM = NO
 # Set this *if only if* your programmer can correctly write the EEPROM
 # and FLASH in one command. If it doesn't, try setting the 9x fuse to
 # not erase the eeprom when you erase the flash.
-DOUBLE_WRITE_OK = NO
+DOUBLE_WRITE_OK = YES
 
 # Command to read/write FLASH/EEPROM images. Currently
 # Must have avrdude interface
-AVRDUDE = /usr/local/bin/avrdude
+AVRDUDE = /usr/bin/avrdude
 
 # Device options for AVRDUDE Command. 
-AVRDEVICE = -c usbasp -p m64
+AVRDEVICE = -c butterfly -p m128 -V -P /dev/ttyUSB0 -b 115200
 
 # Delay to start second AVRDUDE command (required by some).
 DELAY = 5
@@ -52,7 +52,7 @@ DELAY = 5
 # PCB version
 # Values: 9X, 9X128, 9X2561, 9XR, 9XR128, 9XR2561, GRUVIN9X, MEGA2560, SKY9X, 9XRPRO, TARANIS 
 # Old values STD and STD128 are mapped to 9X and 9X128 for compatibility
-PCB = 9X
+PCB = 9XR128
 
 # PCB revision
 PCBREV =
@@ -61,7 +61,7 @@ PCBREV =
 # For this option you need to modify your hardware!
 # More information at [insertURLhere]
 # Values = STD, FRSKY, FRSKY_SPORT, JETI, NMEA, ARDUPILOT, MAVLINK, TELEMETREZ
-EXT = STD
+EXT = MAVLINK
 
 # FAI mode
 # Values = YES, NO, CHOICE
@@ -151,7 +151,7 @@ SPLASH = YES
 # GRAPHICS (sliders / checkboxes / bold / batt graph)
 GRAPHICS = YES
 BOLD = YES
-BATTGRAPH = NO
+BATTGRAPH = YES
 
 # FONT TYPE
 # Values = STD, SQT5
@@ -872,7 +872,7 @@ endif
 
 CPPSRC += opentx.cpp strhelpers.cpp stamp.cpp translations.cpp fonts.cpp $(TTS_SRC) 
 CPPSRC += switches.cpp curves.cpp mixer.cpp timers.cpp $(PULSESSRC) $(EEPROMSRC) $(LCDSRC) keys.cpp maths.cpp
-CPPSRC +=	gui/menus.cpp gui/menu_model.cpp gui/menu_general.cpp gui/view_main.cpp gui/view_statistics.cpp
+CPPSRC +=	io_buffer.cpp gui/menus.cpp gui/menu_model.cpp gui/menu_general.cpp gui/view_main.cpp gui/view_statistics.cpp
 
 # Debugging format.
 #     Native formats for AVR-GCC's -g are dwarf-2 [default] or stabs.

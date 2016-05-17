@@ -37,6 +37,8 @@
 #ifndef lcd_h
 #define lcd_h
 
+#include "lib8tion.h"
+
 #if defined(PCBTARANIS)
   #define LCD_W         212
   #define LCD_H         64
@@ -305,5 +307,93 @@ void lcdInit();
 char * strAppend(char * dest, const char * source);
 char * strAppendDate(char * str, bool time=false);
 char * strAppendFilename(char * dest, const char * filename, const int size);
+
+void lcd_triangle(int16_t x0, int16_t y0,
+				int16_t x1, int16_t y1,
+				int16_t x2, int16_t y2);
+void lcd_fillTriangle ( int16_t x0, int16_t y0,
+				  int16_t x1, int16_t y1,
+				  int16_t x2, int16_t y2);
+void lcd_line(int16_t x0, int16_t y0,
+			    int16_t x1, int16_t y1);
+
+struct Point {
+  int8_t x;
+  int8_t y;
+};
+
+#define SIN8(x) (sin8(x)-128)
+#define COS8(x) (cos8(x)-128)
+
+#define SIN8(x) (sin8(x)-128)
+#define COS8(x) (cos8(x)-128)
+
+#define DEG8(degrees) (uint8_t)(((uint16_t)degrees*128)/180)
+
+struct Line {
+	Line(Point p1, Point p2) {
+		p[0] = p1;
+		p[1] = p2;
+	}
+	void rotate(uint8_t angle) {
+		for (int i = 0; i < 2; i++) {
+
+			int8_t x = p[i].x;
+			int8_t y = p[i].y;
+
+			p[i].x = ((int16_t) COS8(angle) * x) / 128
+					- ((int16_t) SIN8(angle) * y) / 128;
+			p[i].y = (((int16_t) SIN8(angle) * x) / 128)
+					+ (((int16_t) COS8(angle) * y) / 128);
+		}
+	}
+
+	void translate(Point offset) {
+		for (int i = 0; i < 2; i++) {
+			p[i].x += offset.x;
+			p[i].y += offset.y;
+		}
+	}
+
+	void draw() {
+		lcd_line(p[0].x, p[0].y, p[1].x, p[1].y);
+	}
+
+	Point p[2];
+};
+
+struct Triangle {
+	Triangle(Point p1, Point p2, Point p3) {
+		p[0] = p1;
+		p[1] = p2;
+		p[2] = p3;
+	}
+
+	void rotate(uint8_t angle) {
+		for (int i = 0; i < 3; i++) {
+
+			int8_t x = p[i].x;
+			int8_t y = p[i].y;
+
+			p[i].x = ((int16_t) COS8(angle) * x) / 128
+					- ((int16_t) SIN8(angle) * y) / 128;
+			p[i].y = (((int16_t) SIN8(angle) * x) / 128)
+					+ (((int16_t) COS8(angle) * y) / 128);
+		}
+	}
+
+	void translate(Point offset) {
+		for (int i = 0; i < 3; i++) {
+			p[i].x += offset.x;
+			p[i].y += offset.y;
+		}
+	}
+
+	void fill() {
+		lcd_fillTriangle(p[0].x, p[0].y, p[1].x, p[1].y, p[2].x, p[2].y);
+	}
+
+	Point p[3];
+};
 
 #endif

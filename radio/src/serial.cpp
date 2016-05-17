@@ -80,62 +80,34 @@ void SERIAL_DisableRXD(void) {
 }
 #endif
 
-/*
- USART0 (transmit) Data Register Emtpy ISR
- Usef to transmit FrSky data packets, which are buffered in frskyTXBuffer.
- */
 uint8_t serialTxBuffer[MAX_TX_BUFFER]; // 32 characters
-uint8_t serialTxBufferCount = 0;
-uint8_t * ptrTxISR = 0;
-serial_tx_state_t serialTxState = TX_STATE_EMPTY;
+
+IOBuffer fifo(serialTxBuffer, MAX_TX_BUFFER);
 
 #ifndef SIMU
 ISR(USART0_UDRE_vect)
 {
-	if (serialTxBufferCount > 0) {
-		UDR0 = *ptrTxISR++;
-		serialTxBufferCount--;
+	if (!fifo.empty()) {
+		UDR0 = fifo.read();
 	} else {
 		UCSR0B &= ~(1 << UDRIE0); // disable UDRE0 interrupt
-		serialTxState = TX_STATE_EMPTY;
 	}
 }
 #endif
 
-void SERIAL_start_uart_send() {
-	ptrTxISR = serialTxBuffer;
-	serialTxBufferCount = 0;
-}
-
-void SERIAL_end_uart_send() {
-	ptrTxISR = serialTxBuffer;
-	//UCSR0B |= (1 << UDRIE0); // enable  UDRE0 interrupt
-	serialTxState = TX_STATE_READY;
-}
 
 void SERIAL_send_uart_bytes(const uint8_t * buf, uint16_t len) {
-	while (len--) {
-		*ptrTxISR++ = *buf++;
-		serialTxBufferCount++;
+
+	while (len) {
+		while(!fifo.write(*buf));
+		buf++;
+		len--;
+		UCSR0B |= (1 << UDRIE0);
 	}
 
 }
 
-#if 0
-void SERIAL_transmitBuffer(uint8_t len) {
-	serialTxBufferCount = len;
-	ptrTxISR = serialTxBuffer;
-	//UCSR0B |= (1 << UDRIE0); // enable  UDRE0 interrupt
-	serialTxState = TX_STATE_READY;
-}
-#endif
 
-void SERIAL_startTX(void) {
-	if (serialTxState == TX_STATE_READY) {
-		serialTxState = TX_STATE_BUSY;
-		UCSR0B |= (1 << UDRIE0); // enable  UDRE0 interrupt
-	}
-}
 
 static void uart_4800(void) {
 #ifndef SIMU

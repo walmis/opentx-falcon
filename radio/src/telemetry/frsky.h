@@ -373,7 +373,7 @@ enum AlarmLevel {
   #define TELEMETRY_ASPEED_ARGS           frskyData.hub.airSpeed / 10, frskyData.hub.airSpeed % 10,
   #define TELEMETRY_OPENXSENSOR()         (0)
 #else
-  #define TELEMETRY_STREAMING()           (frskyStreaming > 0)
+  #define TELEMETRY_STREAMING()           1
 
   #define TELEMETRY_CELL_VOLTAGE_MUTLIPLIER  2
 
